@@ -126,7 +126,8 @@ td.r,th.r{text-align:right}
     <div><label>预约时间</label><input id="fTime" type="time"></div>
     <div class="full"><label>服务项目（可多选）</label>
       <div class="chips" id="svcChips"></div>
-      <div style="display:flex;gap:8px;margin-top:8px;max-width:360px"><input id="svcOther" placeholder="手动补充项目"><button id="svcAdd">添加</button></div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input id="svcOther" placeholder="手动补充项目" style="max-width:220px"><input id="svcPrice" type="number" step="0.01" min="0" inputmode="decimal" placeholder="价格 RM" style="max-width:120px"><button id="svcAdd">添加</button><button id="svEdit">编辑价目表</button></div>
+      <div id="svcTotal" style="margin-top:6px;font-weight:600"></div>
     </div>
     <div class="full"><label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="fDone" style="width:auto;min-height:0"> 已消费，直接结账（生成单据号）</label></div>
     <div id="fAmtBox" style="display:none"><label>消费金额 (RM)</label><input id="fAmount" type="number" step="0.01" min="0" inputmode="decimal"></div>
@@ -138,18 +139,6 @@ td.r,th.r{text-align:right}
     <button class="p" id="saveBtn">保存记录</button>
     <button id="cancelEdit" style="display:none">取消编辑</button>
   </div>
-</section>
-
-<section class="card noprint" id="custCard">
-  <div class="bar" style="margin-bottom:8px">
-    <div style="flex:1"><label>顾客资料 <span id="custCount"></span></label><input id="custQ" type="search" placeholder="按姓名或电话查找"></div>
-    <button class="p" id="custAdd">新增顾客</button>
-    <button id="custImport">导入顾客 (CSV/VCF)</button><input type="file" id="custFile" accept=".csv,.txt,.vcf,text/csv,text/vcard" style="display:none">
-  </div>
-  <div style="overflow-x:auto"><table>
-    <thead><tr><th>姓名</th><th>电话</th><th>到店次数</th><th class="r">消费总额 (RM)</th><th>最近到店</th><th>备注</th><th></th></tr></thead>
-    <tbody id="custRows"></tbody>
-  </table></div>
 </section>
 
 <section class="card noprint">
@@ -189,8 +178,27 @@ td.r,th.r{text-align:right}
   </table></div>
   <div class="printonly" style="margin-top:10px;font-size:11px">打印日期：<span id="pDate"></span></div>
 </section>
+
+<section class="card noprint" id="custCard">
+  <button id="custToggle" aria-expanded="false" style="width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left"><span><b>顾客资料</b> <span id="custCount"></span></span><span id="custArrow">▼ 展开</span></button>
+  <div id="custBody" style="display:none;margin-top:12px">
+  <div class="bar" style="margin-bottom:8px">
+    <div style="flex:1"><label>查找</label><input id="custQ" type="search" placeholder="按姓名或电话查找"></div>
+    <button class="p" id="custAdd">新增顾客</button>
+    <button id="custImport">导入顾客 (CSV/VCF)</button><input type="file" id="custFile" accept=".csv,.txt,.vcf,text/csv,text/vcard" style="display:none">
+  </div>
+  <div style="overflow-x:auto"><table>
+    <thead><tr><th>姓名</th><th>电话</th><th>到店次数</th><th class="r">消费总额 (RM)</th><th>最近到店</th><th>备注</th><th></th></tr></thead>
+    <tbody id="custRows"></tbody>
+  </table></div>
+</div>
+</section>
 </div>
 
+<div class="ov noprint" id="svBox" style="display:none"><div class="card" style="max-width:520px;max-height:85vh;overflow:auto">
+  <h2>服务项目与价格</h2><div id="svRows"></div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button id="svAdd">添加项目</button><button class="p" id="svOk">保存</button><button id="svNo">取消</button></div>
+</div></div>
 <div id="receipt"></div>
 <div class="ov noprint" id="pasteBox" style="display:none"><div class="card" style="max-width:520px">
   <h2>粘贴恢复</h2><p style="margin-top:0;color:var(--mute)">请把备份文本粘贴到这里</p>
@@ -385,6 +393,16 @@ const TR=[
 [`提醒：已 {0} 天没有备份，请导出备份并存到“文件”或 iCloud。`,`Reminder: no backup for {0} days. Export a backup and save it to Files or iCloud.`,`Peringatan: {0} hari tiada sandaran. Eksport dan simpan ke Files atau iCloud.`],
 [`确定恢复到 {0} 的快照？恢复前会先把当前数据存成一份快照。`,`Restore the snapshot from {0}? Current data is saved as a snapshot first.`,`Pulihkan syot kilat {0}? Data semasa disimpan sebagai syot kilat dahulu.`],
 [`已恢复。`,`Restored.`,`Dipulihkan.`],
+[`展开`,`Show`,`Papar`],
+[`收起`,`Hide`,`Sembunyi`],
+[`查找`,`Search`,`Cari`],
+[`服务项目与价格`,`Services & prices`,`Perkhidmatan & harga`],
+[`项目名称`,`Service name`,`Nama perkhidmatan`],
+[`服务参考合计：RM {0}`,`Services total: RM {0}`,`Jumlah perkhidmatan: RM {0}`],
+[`编辑价目表`,`Edit price list`,`Edit senarai harga`],
+[`价格 RM`,`Price RM`,`Harga RM`],
+[`添加项目`,`Add service`,`Tambah perkhidmatan`],
+[`只显示前 {0} 位，请用搜索框查找`,`Showing the first {0} only. Use the search box to find others.`,`Hanya {0} pertama dipaparkan. Guna kotak carian untuk cari yang lain.`],
 [`复制备份文本`,`Copy backup text`,`Salin teks sandaran`],
 [`粘贴恢复`,`Paste to restore`,`Tampal untuk pulih`],
 [`请把备份文本粘贴到这里`,`Paste the backup text here`,`Tampal teks sandaran di sini`],
@@ -445,7 +463,7 @@ function save(){
     if(prev&&prev!=='[]'){try{const sn=getSnaps();
       if(!sn.some(x=>x.auto&&x.ts.slice(0,10)===new Date().toISOString().slice(0,10))){
         sn.push({ts:new Date().toISOString(),auto:true,records:JSON.parse(prev),customers});
-        localStorage.setItem(SNAP,JSON.stringify(sn.slice(-7)));}}catch(e){}}
+        localStorage.setItem(SNAP,JSON.stringify(sn.slice(-4)));}}catch(e){}}
     localStorage.setItem(DK,JSON.stringify(records));
   }catch(e){alert(t('保存失败：浏览器存储空间不足或被禁用。请立刻导出备份。'));}
 }
@@ -462,7 +480,7 @@ function renderSafety(){
 $('snapRestore').onclick=()=>{const ts=$('snapSel').value;if(!ts)return;const sn=getSnaps(),x=sn.find(y=>y.ts===ts);if(!x)return;
   if(!confirm(t('确定恢复到 {0} 的快照？恢复前会先把当前数据存成一份快照。',ts.slice(0,16).replace('T',' '))))return;
   sn.push({ts:new Date().toISOString(),auto:false,records,customers});
-  try{localStorage.setItem(SNAP,JSON.stringify(sn.slice(-8)));}catch(e){}
+  try{localStorage.setItem(SNAP,JSON.stringify(sn.slice(-5)));}catch(e){}
   records=x.records.map(normalize);customers=(x.customers||customers).map(normCust);save();saveCust();render();alert(t('已恢复。'));};
 
 /* ---------- 密码 ---------- */
@@ -495,40 +513,50 @@ function enter(){ $('lock').style.display='none'; $('app').style.display='block'
   if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().then(ok=>{persisted=ok;renderSafety();}).catch(()=>{});} }
 
 /* ---------- 服务选择 ---------- */
-const CK='hair_salon_custom_svc_v1';
-function saveCustom(){try{localStorage.setItem(CK,JSON.stringify(customSvc))}catch(e){}}
-function renderChips(){
-  const extra=[...selSvc].filter(s=>!DEF_SVC.includes(s)&&!customSvc.includes(s));
-  const cust=[...customSvc,...extra];
-  const mk=(s,c)=>`<span class="chip ${selSvc.has(s)?'on':''}" data-s="${esc(s)}" role="button" tabindex="0">${esc(t(s))}${c?` <i data-act="ren" title="${t('修改名称')}" style="font-style:normal;opacity:.8;padding:0 4px">✎</i><i data-act="del" title="${t('删除')}" style="font-style:normal;opacity:.8;padding:0 4px">×</i>`:''}</span>`;
-  $('svcChips').innerHTML=DEF_SVC.map(s=>mk(s,false)).join('')+cust.map(s=>mk(s,true)).join('');
+const SVK='hair_salon_services_v1';
+let svcList=[], amtTouched=false, svDraft=[];
+const num=x=>{x=parseFloat(x);return isNaN(x)||x<0?0:Math.round(x*100)/100;};
+function saveSvc(){try{localStorage.setItem(SVK,JSON.stringify(svcList))}catch(e){}}
+function loadSvc(){
+  let j=null; try{const raw=localStorage.getItem(SVK);j=raw?JSON.parse(raw):null}catch(e){}
+  if(Array.isArray(j))svcList=j.filter(x=>x&&typeof x.name==='string'&&x.name.trim()).map(x=>({name:x.name.trim(),price:num(x.price)}));
+  else{svcList=[...DEF_SVC,...customSvc.filter(x=>!DEF_SVC.includes(x))].map(n=>({name:n,price:0}));saveSvc();}
 }
-$('svcChips').addEventListener('click',e=>{
-  const chip=e.target.closest('.chip'); if(!chip)return;
-  const s=chip.dataset.s, act=e.target.dataset.act;
-  if(act==='ren'){
-    const n=(prompt(t('修改项目名称'),s)||'').trim(); if(!n||n===s)return;
-    const i=customSvc.indexOf(s); if(i>=0)customSvc[i]=n; else customSvc.push(n);
-    if(selSvc.delete(s))selSvc.add(n);
-    customSvc=[...new Set(customSvc)]; saveCustom(); renderChips();
-  }else if(act==='del'){
-    if(!confirm(t('从选项中删除「{0}」？（已保存的历史记录不受影响）',s)))return;
-    customSvc=customSvc.filter(x=>x!==s); selSvc.delete(s); saveCustom(); renderChips();
-  }else{ selSvc.has(s)?selSvc.delete(s):selSvc.add(s); renderChips(); }
-});
+const svcPrice=n=>{const x=svcList.find(s=>s.name===n);return x?x.price:0;};
+const svcSum=a=>[...a].reduce((s,n)=>s+svcPrice(n),0);
+function renderChips(){
+  const names=svcList.map(s=>s.name), extra=[...selSvc].filter(n=>!names.includes(n));
+  const mk=(n,p)=>`<span class="chip ${selSvc.has(n)?'on':''}" data-s="${esc(n)}" role="button" tabindex="0">${esc(t(n))}${p?' · RM '+money(p):''}</span>`;
+  $('svcChips').innerHTML=svcList.map(s=>mk(s.name,s.price)).join('')+extra.map(n=>mk(n,0)).join('');
+  const tot=svcSum(selSvc);
+  $('svcTotal').textContent=selSvc.size&&tot>0?t('服务参考合计：RM {0}',money(tot)):'';
+  if($('fDone').checked&&!amtTouched&&tot>0)$('fAmount').value=tot.toFixed(2);
+}
+$('svcChips').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;const s=c.dataset.s;selSvc.has(s)?selSvc.delete(s):selSvc.add(s);renderChips();});
 $('svcChips').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('chip')){e.preventDefault();e.target.click();}});
-$('svcAdd').onclick=()=>{const v=$('svcOther').value.trim(); if(!v)return; if(!DEF_SVC.includes(v)&&!customSvc.includes(v)){customSvc.push(v);saveCustom();} selSvc.add(v); $('svcOther').value=''; renderChips();};
+$('fAmount').oninput=()=>{amtTouched=true;};
+$('svcAdd').onclick=()=>{const v=$('svcOther').value.trim();if(!v)return;const x=svcList.find(s=>s.name===v);
+  if(x){if($('svcPrice').value!=='')x.price=num($('svcPrice').value);}else svcList.push({name:v,price:num($('svcPrice').value)});
+  saveSvc();selSvc.add(v);$('svcOther').value=$('svcPrice').value='';renderChips();};
 $('svcOther').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('svcAdd').click();}};
+function renderSv(){$('svRows').innerHTML=svDraft.map((s,i)=>`<div style="display:flex;gap:8px;margin-bottom:8px"><input data-i="${i}" data-f="name" value="${esc(s.name)}" placeholder="${esc(t('项目名称'))}"><input data-i="${i}" data-f="price" type="number" step="0.01" min="0" inputmode="decimal" value="${s.price||''}" placeholder="RM" style="max-width:110px"><button class="d" data-i="${i}">${t('删除')}</button></div>`).join('');}
+$('svEdit').onclick=()=>{svDraft=svcList.map(s=>({...s}));renderSv();$('svBox').style.display='flex';};
+$('svRows').addEventListener('input',e=>{const i=e.target.dataset.i,f=e.target.dataset.f;if(i==null||!f)return;svDraft[i][f]=e.target.value;});
+$('svRows').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;svDraft.splice(+b.dataset.i,1);renderSv();});
+$('svAdd').onclick=()=>{svDraft.push({name:'',price:''});renderSv();const l=$('svRows').querySelectorAll('input[data-f="name"]');l[l.length-1].focus();};
+$('svNo').onclick=()=>{$('svBox').style.display='none'};
+$('svOk').onclick=()=>{const seen=new Set(),out=[];svDraft.forEach(x=>{const n=String(x.name).trim();if(!n||seen.has(n))return;seen.add(n);out.push({name:n,price:num(x.price)});});
+  svcList=out;saveSvc();$('svBox').style.display='none';renderChips();};
 
 /* ---------- 表单 ---------- */
 function resetForm(){
-  editId=null; $('fName').value=$('fPhone').value=$('fAmount').value=$('fNotes').value='';
+  amtTouched=false; editId=null; $('fName').value=$('fPhone').value=$('fAmount').value=$('fNotes').value='';
   $('fDate').value=selDay; $('fTime').value=''; $('fPay').value='Cash'; $('fDone').checked=false; showPay();
   selSvc=new Set(); renderChips();
   $('formTitle').textContent=t('新增预约'); $('saveBtn').textContent=t('保存预约'); $('cancelEdit').style.display='none';
 }
 function showPay(){$('fAmtBox').style.display=$('fPayBox').style.display=$('fDone').checked?'block':'none';}
-$('fDone').onchange=showPay;
+$('fDone').onchange=()=>{showPay();renderChips();};
 function newReceipt(date){const p='R'+date.replace(/-/g,'');let mx=0;
   records.forEach(r=>{if(r.receiptNo&&r.receiptNo.startsWith(p+'-'))mx=Math.max(mx,parseInt(r.receiptNo.slice(p.length+1))||0)});
   return p+'-'+String(mx+1).padStart(3,'0');}
@@ -552,7 +580,7 @@ $('cancelEdit').onclick=resetForm;
 function edit(id){
   const r=records.find(x=>x.id===id); if(!r)return; editId=id;
   $('fName').value=r.customerName;$('fPhone').value=r.phone;$('fDate').value=r.date;$('fTime').value=r.time;
-  $('fDone').checked=r.status==='done';showPay();$('fAmount').value=r.status==='done'?r.amount:'';$('fPay').value=PAYS.includes(r.paymentMethod)?r.paymentMethod:'Cash';$('fNotes').value=r.notes;
+  amtTouched=r.status==='done';$('fDone').checked=r.status==='done';showPay();$('fAmount').value=r.status==='done'?r.amount:'';$('fPay').value=PAYS.includes(r.paymentMethod)?r.paymentMethod:'Cash';$('fNotes').value=r.notes;
   selSvc=new Set(r.services); renderChips();
   $('formTitle').textContent=t('编辑记录'); $('saveBtn').textContent=t('更新记录'); $('cancelEdit').style.display='inline-block';
   $('formCard').scrollIntoView({behavior:'smooth'});
@@ -600,7 +628,7 @@ $('agenda').addEventListener('click',e=>{const b=e.target.closest('button');if(!
 let coId=null;
 function openCo(id){const r=records.find(x=>x.id===id);if(!r)return;coId=id;
   $('coInfo').textContent=r.customerName+'　'+r.date+' '+r.time+(r.services.length?'　'+svcText(r.services):'');
-  $('coAmt').value='';$('coPay').value='Cash';$('coBox').style.display='flex';setTimeout(()=>$('coAmt').focus(),50);}
+  $('coAmt').value=svcSum(r.services)>0?svcSum(r.services).toFixed(2):'';$('coPay').value='Cash';$('coBox').style.display='flex';setTimeout(()=>$('coAmt').focus(),50);}
 $('coNo').onclick=()=>{$('coBox').style.display='none'};
 $('coOk').onclick=()=>{const r=records.find(x=>x.id===coId);if(!r)return;const a=parseFloat($('coAmt').value);
   if(isNaN(a)||a<0){alert(t('请填写实际消费金额'));return;}
@@ -664,13 +692,18 @@ function ensureCust(name,phone){
   else customers.push(normCust({name,phone}));
 }
 function custStats(c){const d=records.filter(r=>r.status==='done'&&matches(c,r));
-  return {n:d.length,total:d.reduce((s,r)=>s+r.amount,0),last:d.map(r=>r.date).sort().pop()||''};}
+  return {n:d.length,total:d.reduce((s,r)=>s+r.amount,0),last:[c.lastVisit||'',...d.map(r=>r.date)].sort().pop()||''};}
+let custOpen=false;
+function setCustOpen(o){custOpen=o;$('custBody').style.display=o?'block':'none';$('custToggle').setAttribute('aria-expanded',o);renderCust();}
+$('custToggle').onclick=()=>setCustOpen(!custOpen);
 function renderCust(){
+  if(!custOpen){$('custCount').textContent=t('（共 {0} 位）',customers.length);$('custArrow').textContent='▼ '+t('展开');
+    $('custList').innerHTML=customers.map(c=>`<option value="${esc(c.name)}">${esc(c.phone)}</option>`).join('');return;}
   const q=$('custQ').value.trim().toLowerCase(), qd=digits(q);
   const rows=customers.filter(c=>!q||c.name.toLowerCase().includes(q)||(qd&&digits(c.phone).includes(qd)))
     .sort((a,b)=>a.name.localeCompare(b.name));
-  $('custCount').textContent=t('（共 {0} 位）',customers.length);
-  $('custRows').innerHTML=rows.length?rows.map(c=>{const cs=custStats(c),id=esc(c.id);
+  const shown=rows;$('custArrow').textContent='▲ '+t('收起');$('custCount').textContent=t('（共 {0} 位）',customers.length)+(rows.length>shown.length?' '+t('只显示前 {0} 位，请用搜索框查找',shown.length):'');
+  $('custRows').innerHTML=shown.length?shown.map(c=>{const cs=custStats(c),id=esc(c.id);
     return `<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.phone)||'-'}</td><td>${cs.n}</td><td class="r">${money(cs.total)}</td><td>${esc(cs.last)||t('未到店')}</td><td>${esc(c.notes)}</td>
     <td style="white-space:nowrap"><button data-a="bk" data-id="${id}">${t('预约')}</button> <button data-a="hs" data-id="${id}">${t('记录')}</button> <button data-a="ce" data-id="${id}">${t('编辑')}</button> <button class="d" data-a="cd" data-id="${id}">${t('删除')}</button></td></tr>`}).join('')
     :'<tr><td colspan="7" class="empty">'+t('没有找到顾客。点“新增顾客”可先存入还没来过的顾客。')+'</td></tr>';
@@ -721,11 +754,14 @@ function parseCSV(t){const first=t.split('\n')[0]||'';
 function parseVCF(t){return t.split(/BEGIN:VCARD/i).slice(1).map(b=>{const g=re=>{const m=b.match(re);return m?m[1].trim():''};
   let name=g(/^FN[^:\n]*:(.*)$/m);if(!name)name=g(/^N[^:\n]*:(.*)$/m).split(';').filter(Boolean).reverse().join(' ');
   return {name,phone:g(/^TEL[^:\n]*:(.*)$/m),notes:g(/^NOTE[^:\n]*:(.*)$/m)};});}
-function rowsToCust(rows){if(!rows.length)return [];
-  const h=rows[0].map(x=>x.trim().toLowerCase());
-  const ni=h.findIndex(x=>/name|姓名|名字|顾客|客户|客人|会员/.test(x)),pi=h.findIndex(x=>/phone|mobile|tel|电话|手机|号码|contact/.test(x)),bi=h.findIndex(x=>/note|remark|备注|memo/.test(x));
-  const head=ni>=0||pi>=0, N=head&&ni>=0?ni:0, P=head?pi:1, B=head?bi:2;
-  return rows.slice(head?1:0).map(r=>({name:(r[N]||'').trim(),phone:P>=0?(r[P]||'').trim():'',notes:B>=0?(r[B]||'').trim():''}));}
+const toISO=x=>{x=String(x||'');let m=x.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return m[1]+'-'+pad(m[2])+'-'+pad(m[3]);m=x.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?m[3]+'-'+pad(m[2])+'-'+pad(m[1]):'';};
+const normPhone=x=>{x=String(x||'').trim();const d=x.replace(/\D/g,'');return(/^60\d{8,10}$/.test(d)&&!x.startsWith('+'))?'0'+d.slice(2):x;};
+function rowsToCust(rows){
+  const hi=rows.findIndex(r=>r.length>1&&r.some(c=>/name|姓名|名字|顾客|客户|客人|会员|phone|mobile|tel|电话|手机/i.test(c)));
+  const head=hi>=0,h=head?rows[hi].map(x=>x.trim().toLowerCase()):[],f=re=>h.findIndex(x=>re.test(x));
+  const ni=f(/name|姓名|名字|顾客|客户|客人|会员/),pi=f(/phone|mobile|tel|电话|手机|号码|contact/),bi=f(/note|remark|备注|memo/),li=f(/last.?visit|最近|上次/);
+  const N=head&&ni>=0?ni:0,P=head?pi:1,B=head?bi:2;
+  return rows.slice(head?hi+1:0).map(r=>({name:(r[N]||'').trim(),phone:P>=0?normPhone(r[P]):'',notes:B>=0?(r[B]||'').trim():'',lastVisit:li>=0?toISO(r[li]):''}));}
 $('custImport').onclick=()=>$('custFile').click();
 $('custFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();
   rd.onload=()=>{try{
@@ -746,7 +782,7 @@ $('hsClose').onclick=()=>{$('cuHist').style.display='none'};
 /* ---------- 备份 / 恢复 ---------- */
 function dlFile(name,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.download=name;document.body.appendChild(a);a.click();a.remove();}
 $('exportBtn').onclick=async()=>{
-  const name='hair_salon_backup_'+today()+'.json', text=JSON.stringify({version:2,exportedAt:new Date().toISOString(),records,customers,shop:getShop()},null,2);
+  const name='hair_salon_backup_'+today()+'.json', text=backupText();
   try{
     const file=new File([text],name,{type:'application/json'});
     if(navigator.canShare&&navigator.canShare({files:[file]}))await navigator.share({files:[file],title:name});
@@ -755,7 +791,7 @@ $('exportBtn').onclick=async()=>{
   }catch(e){if(e&&e.name==='AbortError')return; dlFile(name,text); localStorage.setItem(LB,new Date().toISOString());}
   renderSafety();
 };
-function backupText(){return JSON.stringify({version:2,exportedAt:new Date().toISOString(),records,customers,shop:getShop()},null,2);}
+function backupText(){return JSON.stringify({version:2,exportedAt:new Date().toISOString(),records,customers,services:svcList,shop:getShop()},null,2);}
 function importText(text){
   try{
     const j=JSON.parse(text.trim()); const arr=Array.isArray(j)?j:(j&&j.records);
@@ -769,6 +805,7 @@ function importText(text){
       if(sh.name){$('shopName').value=sh.name;localStorage.setItem(SK,sh.name);}
       if(sh.address){$('shopAddr').value=sh.address;localStorage.setItem(SKA,sh.address);}
       if(sh.phone){$('shopPhone').value=sh.phone;localStorage.setItem(SKP,sh.phone);}}
+    if(!Array.isArray(j)&&Array.isArray(j.services)){j.services.forEach(x=>{if(x&&typeof x.name==='string'&&x.name.trim()){const n=x.name.trim(),e=svcList.find(q=>q.name===n);if(e)e.price=num(x.price);else svcList.push({name:n,price:num(x.price)});}});saveSvc();renderChips();}
     records.forEach(r=>ensureCust(r.customerName,r.phone)); saveCust(); render(); alert(t('导入完成，现有 {0} 条记录。',records.length));
     return true;
   }catch(err){alert(t('导入失败：文件不是有效的备份 JSON。现有数据未改动。'));return false;}
@@ -803,6 +840,7 @@ $('pw1').onkeydown=$('pw2').onkeydown=e=>{if(e.key==='Enter')submitLock();};
 records=load();
 loadCustomers();
 try{customSvc=JSON.parse(localStorage.getItem('hair_salon_custom_svc_v1')||'[]').filter(x=>typeof x==='string')}catch(e){customSvc=[]}
+loadSvc();
 month=today().slice(0,7); $('monthSel').value=month;
 $('shopName').value=localStorage.getItem(SK)||'我的理发店'; $('shopAddr').value=localStorage.getItem(SKA)||''; $('shopPhone').value=localStorage.getItem(SKP)||'';
 resetForm();
