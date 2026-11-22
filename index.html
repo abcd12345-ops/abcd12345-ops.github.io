@@ -129,6 +129,11 @@ td.r,th.r{text-align:right}
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input id="svcOther" placeholder="手动补充项目" style="max-width:220px"><input id="svcPrice" type="number" step="0.01" min="0" inputmode="decimal" placeholder="价格 RM" style="max-width:120px"><button id="svcAdd">添加</button><button id="svEdit">编辑价目表</button></div>
       <div id="svcTotal" style="margin-top:6px;font-weight:600"></div>
     </div>
+    <div class="full">
+      <button type="button" id="pdToggle" aria-expanded="false" style="width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left"><span><b>理发产品</b> <span id="pdSummary"></span></span><span id="pdArrow">▼ 展开</span></button>
+      <div id="pdBody" style="display:none;margin-top:8px"><div id="pdList"></div>
+        <button type="button" id="pdEdit" style="margin-top:10px">编辑产品与库存</button></div>
+    </div>
     <div class="full"><label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="fDone" style="width:auto;min-height:0"> 已消费，直接结账（生成单据号）</label></div>
     <div id="fAmtBox" style="display:none"><label>消费金额 (RM)</label><input id="fAmount" type="number" step="0.01" min="0" inputmode="decimal"></div>
     <div id="fPayBox" style="display:none"><label>支付方式</label>
@@ -198,6 +203,10 @@ td.r,th.r{text-align:right}
 <div class="ov noprint" id="svBox" style="display:none"><div class="card" style="max-width:520px;max-height:85vh;overflow:auto">
   <h2>服务项目与价格</h2><div id="svRows"></div>
   <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button id="svAdd">添加项目</button><button class="p" id="svOk">保存</button><button id="svNo">取消</button></div>
+</div></div>
+<div class="ov noprint" id="pdBox" style="display:none"><div class="card" style="max-width:560px;max-height:85vh;overflow:auto">
+  <h2>产品与库存</h2><p style="margin-top:0;color:var(--mute);font-size:14px">产品名称 / 价格 RM / 库存</p><div id="pdRows"></div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button id="pdAdd">添加产品</button><button class="p" id="pdOk">保存</button><button id="pdNo">取消</button></div>
 </div></div>
 <div id="receipt"></div>
 <div class="ov noprint" id="pasteBox" style="display:none"><div class="card" style="max-width:520px">
@@ -393,6 +402,20 @@ const TR=[
 [`提醒：已 {0} 天没有备份，请导出备份并存到“文件”或 iCloud。`,`Reminder: no backup for {0} days. Export a backup and save it to Files or iCloud.`,`Peringatan: {0} hari tiada sandaran. Eksport dan simpan ke Files atau iCloud.`],
 [`确定恢复到 {0} 的快照？恢复前会先把当前数据存成一份快照。`,`Restore the snapshot from {0}? Current data is saved as a snapshot first.`,`Pulihkan syot kilat {0}? Data semasa disimpan sebagai syot kilat dahulu.`],
 [`已恢复。`,`Restored.`,`Dipulihkan.`],
+[`理发产品`,`Hair products`,`Produk rambut`],
+[`编辑产品与库存`,`Edit products & stock`,`Edit produk & stok`],
+[`产品与库存`,`Products & stock`,`Produk & stok`],
+[`产品名称 / 价格 RM / 库存`,`Product name / Price RM / Stock`,`Nama produk / Harga RM / Stok`],
+[`添加产品`,`Add product`,`Tambah produk`],
+[`产品名称`,`Product name`,`Nama produk`],
+[`库存`,`Stock`,`Stok`],
+[`缺货`,`Out of stock`,`Kehabisan stok`],
+[`库存偏低`,`Low stock`,`Stok rendah`],
+[`（{0} 种）`,`({0} items)`,`({0} item)`],
+[`（{0} 种，{1} 种库存偏低）`,`({0} items, {1} low on stock)`,`({0} item, {1} stok rendah)`],
+[`还没有产品。点“编辑产品与库存”添加。`,`No products yet. Tap "Edit products & stock" to add some.`,`Belum ada produk. Tekan "Edit produk & stok" untuk tambah.`],
+[`库存不足：{0} 只剩 {1}`,`Not enough stock: only {1} of {0} left`,`Stok tidak cukup: {0} tinggal {1}`],
+[`参考合计：RM {0}`,`Estimated total: RM {0}`,`Anggaran jumlah: RM {0}`],
 [`展开`,`Show`,`Papar`],
 [`收起`,`Hide`,`Sembunyi`],
 [`查找`,`Search`,`Cari`],
@@ -444,8 +467,8 @@ function normalize(r){
     customerName:r.customerName||'', phone:r.phone||'',
     services:Array.isArray(r.services)?r.services:(r.services?String(r.services).split(/[,，、]/).map(s=>s.trim()).filter(Boolean):[]),
     amount:Number(r.amount)||0,
-    paymentMethod:r.paymentMethod||'Cash', notes:r.notes||'', status:r.status||'done', receiptNo:r.receiptNo||'',
-    ...Object.fromEntries(Object.entries(r).filter(([k])=>!['id','date','time','customerName','phone','services','amount','paymentMethod','notes','status','receiptNo'].includes(k)))
+    paymentMethod:r.paymentMethod||'Cash', notes:r.notes||'', status:r.status||'done', receiptNo:r.receiptNo||'', products:Array.isArray(r.products)?r.products.filter(x=>x&&x.name).map(x=>({name:String(x.name),qty:Number(x.qty)||0,price:Number(x.price)||0})):[],
+    ...Object.fromEntries(Object.entries(r).filter(([k])=>!['id','date','time','customerName','phone','services','amount','paymentMethod','notes','status','receiptNo','products'].includes(k)))
   };
 }
 function load(){
@@ -524,12 +547,48 @@ function loadSvc(){
 }
 const svcPrice=n=>{const x=svcList.find(s=>s.name===n);return x?x.price:0;};
 const svcSum=a=>[...a].reduce((s,n)=>s+svcPrice(n),0);
+const PDK='hair_salon_products_v1';
+let prodList=[], selProd={}, pdOpen=false, pdDraft=[];
+function saveProd(){try{localStorage.setItem(PDK,JSON.stringify(prodList))}catch(e){}}
+function loadProd(){try{const j=JSON.parse(localStorage.getItem(PDK)||'[]');prodList=Array.isArray(j)?j.filter(x=>x&&typeof x.name==='string'&&x.name.trim()).map(x=>({name:x.name.trim(),price:num(x.price),stock:Math.max(0,Math.floor(Number(x.stock))||0)})):[];}catch(e){prodList=[];}}
+const prodAmt=a=>(a||[]).reduce((s,x)=>s+x.qty*x.price,0);
+const prodSel=()=>Object.entries(selProd).reduce((s,[n,q])=>{const p=prodList.find(x=>x.name===n);return s+(p?q*p.price:0)},0);
+const recTotal=r=>svcSum(r.services)+prodAmt(r.products);
+const itemsText=r=>(r.services||[]).map(x=>t(x)).concat((r.products||[]).map(x=>x.name+'×'+x.qty)).join(lang==='zh'?'、':', ');
+function applyStock(o,n){const d={};(o||[]).forEach(x=>{d[x.name]=(d[x.name]||0)+x.qty});(n||[]).forEach(x=>{d[x.name]=(d[x.name]||0)-x.qty});
+  let ch=false;prodList.forEach(p=>{if(d[p.name]){p.stock=Math.max(0,p.stock+d[p.name]);ch=true;}});if(ch)saveProd();}
+function availStock(p){const old=editId&&records.find(r=>r.id===editId);
+  return p.stock+(old&&old.status==='done'?(old.products||[]).filter(x=>x.name===p.name).reduce((s,x)=>s+x.qty,0):0);}
+function buildProducts(old){return Object.entries(selProd).filter(([n,q])=>q>0&&prodList.some(p=>p.name===n)).map(([n,q])=>{
+  const o=old&&(old.products||[]).find(x=>x.name===n);return {name:n,qty:q,price:o?o.price:prodList.find(p=>p.name===n).price};});}
+function renderPd(){
+  const low=prodList.filter(p=>p.stock<=3).length;
+  $('pdSummary').textContent=prodList.length?(low?t('（{0} 种，{1} 种库存偏低）',prodList.length,low):t('（{0} 种）',prodList.length)):'';
+  $('pdArrow').textContent=(pdOpen?'▲ ':'▼ ')+t(pdOpen?'收起':'展开');
+  $('pdBody').style.display=pdOpen?'block':'none';
+  if(!pdOpen)return;
+  $('pdList').innerHTML=prodList.length?prodList.map((p,i)=>{const q=selProd[p.name]||0;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);flex-wrap:wrap"><div style="flex:1;min-width:160px"><b>${esc(p.name)}</b> · RM ${money(p.price)}<br><small style="color:${p.stock<=3?'var(--acc2)':'var(--mute)'}">${t('库存')}: ${p.stock}${p.stock<=0?' ('+t('缺货')+')':p.stock<=3?' ('+t('库存偏低')+')':''}</small></div><button data-i="${i}" data-d="-1">−</button><b style="min-width:24px;text-align:center">${q}</b><button data-i="${i}" data-d="1">+</button></div>`}).join('')
+    :`<div class="empty">${esc(t('还没有产品。点“编辑产品与库存”添加。'))}</div>`;
+}
+$('pdToggle').onclick=()=>{pdOpen=!pdOpen;$('pdToggle').setAttribute('aria-expanded',pdOpen);renderPd();};
+$('pdList').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const p=prodList[+b.dataset.i];if(!p)return;
+  const q=(selProd[p.name]||0)+(+b.dataset.d);if(q<0)return;const mx=availStock(p);
+  if(q>mx){alert(t('库存不足：{0} 只剩 {1}',p.name,mx));return;}selProd[p.name]=q;renderChips();});
+function renderPdEd(){$('pdRows').innerHTML=pdDraft.map((p,i)=>`<div style="display:flex;gap:6px;margin-bottom:8px"><input data-i="${i}" data-f="name" value="${esc(p.name)}" placeholder="${esc(t('产品名称'))}"><input data-i="${i}" data-f="price" type="number" step="0.01" min="0" inputmode="decimal" value="${p.price||''}" placeholder="RM" style="max-width:90px"><input data-i="${i}" data-f="stock" type="number" step="1" min="0" inputmode="numeric" value="${p.stock}" placeholder="${esc(t('库存'))}" style="max-width:80px"><button class="d" data-i="${i}">${t('删除')}</button></div>`).join('');}
+$('pdEdit').onclick=()=>{pdDraft=prodList.map(p=>({...p}));renderPdEd();$('pdBox').style.display='flex';};
+$('pdRows').addEventListener('input',e=>{const i=e.target.dataset.i,f=e.target.dataset.f;if(i==null||!f)return;pdDraft[i][f]=e.target.value;});
+$('pdRows').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;pdDraft.splice(+b.dataset.i,1);renderPdEd();});
+$('pdAdd').onclick=()=>{pdDraft.push({name:'',price:'',stock:0});renderPdEd();const l=$('pdRows').querySelectorAll('input[data-f="name"]');l[l.length-1].focus();};
+$('pdNo').onclick=()=>{$('pdBox').style.display='none'};
+$('pdOk').onclick=()=>{const seen=new Set(),out=[];pdDraft.forEach(x=>{const n=String(x.name).trim();if(!n||seen.has(n))return;seen.add(n);out.push({name:n,price:num(x.price),stock:Math.max(0,Math.floor(Number(x.stock))||0)});});
+  prodList=out;saveProd();$('pdBox').style.display='none';renderChips();};
 function renderChips(){
   const names=svcList.map(s=>s.name), extra=[...selSvc].filter(n=>!names.includes(n));
   const mk=(n,p)=>`<span class="chip ${selSvc.has(n)?'on':''}" data-s="${esc(n)}" role="button" tabindex="0">${esc(t(n))}${p?' · RM '+money(p):''}</span>`;
   $('svcChips').innerHTML=svcList.map(s=>mk(s.name,s.price)).join('')+extra.map(n=>mk(n,0)).join('');
-  const tot=svcSum(selSvc);
-  $('svcTotal').textContent=selSvc.size&&tot>0?t('服务参考合计：RM {0}',money(tot)):'';
+  const tot=svcSum(selSvc)+prodSel(); renderPd();
+  $('svcTotal').textContent=tot>0?t('参考合计：RM {0}',money(tot)):'';
   if($('fDone').checked&&!amtTouched&&tot>0)$('fAmount').value=tot.toFixed(2);
 }
 $('svcChips').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;const s=c.dataset.s;selSvc.has(s)?selSvc.delete(s):selSvc.add(s);renderChips();});
@@ -552,7 +611,7 @@ $('svOk').onclick=()=>{const seen=new Set(),out=[];svDraft.forEach(x=>{const n=S
 function resetForm(){
   amtTouched=false; editId=null; $('fName').value=$('fPhone').value=$('fAmount').value=$('fNotes').value='';
   $('fDate').value=selDay; $('fTime').value=''; $('fPay').value='Cash'; $('fDone').checked=false; showPay();
-  selSvc=new Set(); renderChips();
+  selSvc=new Set(); selProd={}; renderChips();
   $('formTitle').textContent=t('新增预约'); $('saveBtn').textContent=t('保存预约'); $('cancelEdit').style.display='none';
 }
 function showPay(){$('fAmtBox').style.display=$('fPayBox').style.display=$('fDone').checked?'block':'none';}
@@ -569,9 +628,9 @@ $('saveBtn').onclick=()=>{
   const date=$('fDate').value||today();
   const rec={id:editId||('r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)),
     date, time:$('fTime').value, customerName:name, phone:$('fPhone').value.trim(),
-    services:[...selSvc], amount:done?Math.round(amt*100)/100:0, paymentMethod:$('fPay').value, notes:$('fNotes').value.trim(),
+    services:[...selSvc], products:buildProducts(old), amount:done?Math.round(amt*100)/100:0, paymentMethod:$('fPay').value, notes:$('fNotes').value.trim(),
     status:done?'done':'booked', receiptNo:done?((old&&old.receiptNo)||newReceipt(date)):''};
-  let msg='';
+  let msg=''; applyStock(old&&old.status==='done'?old.products:[],done?rec.products:[]);
   if(old){const i=records.indexOf(old); records[i]={...old,...rec};} else records.push(rec);
   save(); ensureCust(name,rec.phone); saveCust(); if(done&&!(old&&old.receiptNo)) msg=t('已结账，单据号：{0}',rec.receiptNo);
   selDay=date; resetForm(); setMonth(date.slice(0,7)); if(msg)alert(msg);
@@ -581,13 +640,13 @@ function edit(id){
   const r=records.find(x=>x.id===id); if(!r)return; editId=id;
   $('fName').value=r.customerName;$('fPhone').value=r.phone;$('fDate').value=r.date;$('fTime').value=r.time;
   amtTouched=r.status==='done';$('fDone').checked=r.status==='done';showPay();$('fAmount').value=r.status==='done'?r.amount:'';$('fPay').value=PAYS.includes(r.paymentMethod)?r.paymentMethod:'Cash';$('fNotes').value=r.notes;
-  selSvc=new Set(r.services); renderChips();
+  selSvc=new Set(r.services); selProd={};(r.products||[]).forEach(x=>{selProd[x.name]=x.qty}); if((r.products||[]).length)pdOpen=true; renderChips();
   $('formTitle').textContent=t('编辑记录'); $('saveBtn').textContent=t('更新记录'); $('cancelEdit').style.display='inline-block';
   $('formCard').scrollIntoView({behavior:'smooth'});
 }
 function del(id){
   const r=records.find(x=>x.id===id); if(!r)return;
-  if(confirm(t('确定删除「{0}」{1} 的这条记录？',r.customerName,r.date))){records=records.filter(x=>x.id!==id);save();render();}
+  if(confirm(t('确定删除「{0}」{1} 的这条记录？',r.customerName,r.date))){if(r.status==='done')applyStock(r.products,[]);records=records.filter(x=>x.id!==id);save();render();}
 }
 $('rows').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return; {const a=b.dataset.a;a==='e'?edit(b.dataset.id):a==='pr'?printReceipt(b.dataset.id):del(b.dataset.id);}});
 
@@ -618,7 +677,7 @@ function renderAgenda(){
   $('agTitle').textContent=t('{0} 的预约（共 {1} 位）',selDay,n);
   $('agenda').innerHTML=l.length?l.map(r=>`<div class="ag ${r.status}"><div class="tm">${esc(r.time||t('未定'))}</div>
     <div class="inf"><b>${esc(r.customerName)}</b><span class="tag ${r.status}">${st[r.status]||''}</span> ${esc(r.phone)}<br>
-    <small style="color:var(--mute)">${esc(svcText(r.services))}${r.notes?'　'+esc(r.notes):''}${r.status==='done'?'　RM '+money(r.amount)+'　'+esc(r.paymentMethod)+'　'+t('单据号')+' '+esc(r.receiptNo||'-'):''}</small></div>
+    <small style="color:var(--mute)">${esc(itemsText(r))}${r.notes?'　'+esc(r.notes):''}${r.status==='done'?'　RM '+money(r.amount)+'　'+esc(r.paymentMethod)+'　'+t('单据号')+' '+esc(r.receiptNo||'-'):''}</small></div>
     <div class="acts">${r.status==='done'?`<button class="p" data-a="pr" data-id="${esc(r.id)}">${t('打印单据')}</button>`:''}${r.status==='booked'?`<button class="p" data-a="co" data-id="${esc(r.id)}">${t('结账')}</button>`:''}<button data-a="e" data-id="${esc(r.id)}">${t('编辑')}</button>${r.status==='booked'?`<button data-a="cx" data-id="${esc(r.id)}">${t('取消预约')}</button>`:''}<button class="d" data-a="d" data-id="${esc(r.id)}">${t('删除')}</button></div></div>`).join('')
     :'<div class="empty">'+t('这一天还没有预约。在下方“新增预约”填写即可。')+'</div>';
 }
@@ -627,12 +686,12 @@ $('agenda').addEventListener('click',e=>{const b=e.target.closest('button');if(!
   else if(a==='cx'){const r=records.find(x=>x.id===id);if(r&&confirm(t('取消「{0}」的预约？',r.customerName))){r.status='cancelled';save();render();}}});
 let coId=null;
 function openCo(id){const r=records.find(x=>x.id===id);if(!r)return;coId=id;
-  $('coInfo').textContent=r.customerName+'　'+r.date+' '+r.time+(r.services.length?'　'+svcText(r.services):'');
-  $('coAmt').value=svcSum(r.services)>0?svcSum(r.services).toFixed(2):'';$('coPay').value='Cash';$('coBox').style.display='flex';setTimeout(()=>$('coAmt').focus(),50);}
+  $('coInfo').textContent=r.customerName+'　'+r.date+' '+r.time+(r.services.length?'　'+itemsText(r):'');
+  $('coAmt').value=recTotal(r)>0?recTotal(r).toFixed(2):'';$('coPay').value='Cash';$('coBox').style.display='flex';setTimeout(()=>$('coAmt').focus(),50);}
 $('coNo').onclick=()=>{$('coBox').style.display='none'};
 $('coOk').onclick=()=>{const r=records.find(x=>x.id===coId);if(!r)return;const a=parseFloat($('coAmt').value);
   if(isNaN(a)||a<0){alert(t('请填写实际消费金额'));return;}
-  r.amount=Math.round(a*100)/100;r.paymentMethod=$('coPay').value;r.status='done';if(!r.receiptNo)r.receiptNo=newReceipt(r.date);
+  r.amount=Math.round(a*100)/100;r.paymentMethod=$('coPay').value;applyStock([],r.products);r.status='done';if(!r.receiptNo)r.receiptNo=newReceipt(r.date);
   save();$('coBox').style.display='none';render();if(confirm(t('结账完成，单据号：{0}\n现在打印单据吗？',r.receiptNo)))printReceipt(r.id);};
 
 /* ---------- 列表与统计 ---------- */
@@ -647,7 +706,7 @@ function render(){
   $('stats').innerHTML=[['总订单数（已完成）',list.length],['待完成预约',pending],['总营业额 (RM)',money(total)],['Cash 总额 (RM)',money(by('Cash'))],
     ['QR/电子支付 (RM)',money(qr)],['　QR Pay',money(by('QR Pay'))],['　Card',money(by('Card'))],['　Transfer',money(by('Transfer'))]]
     .map(([k,v])=>`<div class="stat${k==='待完成预约'?' noprint':''}"><span>${t(k)}</span><b>${v}</b></div>`).join('');
-  $('rows').innerHTML=list.length?list.map(r=>`<tr><td>${esc(r.receiptNo||'-')}</td><td>${esc(r.date)}</td><td>${esc(r.time)}</td><td>${esc(r.customerName)}</td><td>${esc(r.phone)}</td><td>${esc(svcText(r.services))}</td><td>${esc(r.paymentMethod)}</td><td class="r">${money(r.amount)}</td><td>${esc(r.notes)}</td><td class="noprint" style="white-space:nowrap"><button data-a="pr" data-id="${esc(r.id)}">${t('单据')}</button> <button data-a="e" data-id="${esc(r.id)}">${t('编辑')}</button> <button class="d" data-a="d" data-id="${esc(r.id)}">${t('删除')}</button></td></tr>`).join('')
+  $('rows').innerHTML=list.length?list.map(r=>`<tr><td>${esc(r.receiptNo||'-')}</td><td>${esc(r.date)}</td><td>${esc(r.time)}</td><td>${esc(r.customerName)}</td><td>${esc(r.phone)}</td><td>${esc(itemsText(r))}</td><td>${esc(r.paymentMethod)}</td><td class="r">${money(r.amount)}</td><td>${esc(r.notes)}</td><td class="noprint" style="white-space:nowrap"><button data-a="pr" data-id="${esc(r.id)}">${t('单据')}</button> <button data-a="e" data-id="${esc(r.id)}">${t('编辑')}</button> <button class="d" data-a="d" data-id="${esc(r.id)}">${t('删除')}</button></td></tr>`).join('')
     :'<tr><td colspan="10" class="empty">'+t('这个范围内还没有记录。在上方填写并保存第一笔。')+'</td></tr>';
   $('allBtn').textContent=showAll?t('返回按月查看'):t('查看全部'); $('dayBtn').textContent=dayMode?t('返回按月查看'):t('按日查看'); $('daySel').value=selDay; $('pdfBtn').textContent=dayMode?t('导出当天报表 PDF'):t('导出当前月份报税 PDF'); renderCal(); renderAgenda(); renderCust(); renderSafety();
 }
@@ -664,7 +723,7 @@ function printReceipt(id){const r=records.find(x=>x.id===id);if(!r)return;const 
   $('receipt').innerHTML=`<div class="rc"><h3 style="text-align:center;margin:0 0 4px">${esc(sh.name)}</h3>
   ${sh.address?`<div style="text-align:center">${esc(sh.address)}</div>`:''}${sh.phone?`<div style="text-align:center">Tel: ${esc(sh.phone)}</div>`:''}<hr>
   <div>${t('单据号')}: <b>${esc(r.receiptNo||'-')}</b></div><div>${t('日期')}: ${esc(r.date)} ${esc(r.time)}</div><div>${t('顾客')}: ${esc(r.customerName)}</div><hr>
-  <div>${esc(svcText(r.services)||t('服务'))}</div>
+  <div>${esc(itemsText(r)||t('服务'))}</div>
   <div style="display:flex;justify-content:space-between;font-size:16px;margin-top:6px"><b>${t('合计')}</b><b>RM ${money(r.amount)}</b></div>
   <div>${t('支付方式')}: ${esc(r.paymentMethod)}</div><hr><div style="text-align:center">${t('谢谢光临')}</div></div>`;
   document.body.classList.add('pr-receipt');window.print();}
@@ -738,7 +797,7 @@ $('custRows').addEventListener('click',e=>{const b=e.target.closest('button');if
     const st={booked:t('预约中'),done:t('已完成'),cancelled:t('已取消')};
     $('hsTitle').textContent=c.name+(c.phone?'　'+c.phone:'');
     $('hsSum').textContent=t('到店 {0} 次，消费总额 RM {1}',cs.n,money(cs.total))+(c.notes?'　'+t('备注：{0}',c.notes):'');
-    $('hsRows').innerHTML=l.length?l.map(r=>`<tr><td>${esc(r.date)} ${esc(r.time)}</td><td>${esc(svcText(r.services))}</td><td>${st[r.status]||''}</td><td class="r">${r.status==='done'?money(r.amount):'-'}</td><td>${esc(r.receiptNo||'-')}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">'+t('还没有来过。')+'</td></tr>';
+    $('hsRows').innerHTML=l.length?l.map(r=>`<tr><td>${esc(r.date)} ${esc(r.time)}</td><td>${esc(itemsText(r))}</td><td>${st[r.status]||''}</td><td class="r">${r.status==='done'?money(r.amount):'-'}</td><td>${esc(r.receiptNo||'-')}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">'+t('还没有来过。')+'</td></tr>';
     $('cuHist').style.display='flex';}
 });
 const pkey=p=>{let d=digits(p);if(d.startsWith('60'))d=d.slice(2);return d.replace(/^0+/,'');};
@@ -791,7 +850,7 @@ $('exportBtn').onclick=async()=>{
   }catch(e){if(e&&e.name==='AbortError')return; dlFile(name,text); localStorage.setItem(LB,new Date().toISOString());}
   renderSafety();
 };
-function backupText(){return JSON.stringify({version:2,exportedAt:new Date().toISOString(),records,customers,services:svcList,shop:getShop()},null,2);}
+function backupText(){return JSON.stringify({version:2,exportedAt:new Date().toISOString(),records,customers,services:svcList,products:prodList,shop:getShop()},null,2);}
 function importText(text){
   try{
     const j=JSON.parse(text.trim()); const arr=Array.isArray(j)?j:(j&&j.records);
@@ -806,6 +865,7 @@ function importText(text){
       if(sh.address){$('shopAddr').value=sh.address;localStorage.setItem(SKA,sh.address);}
       if(sh.phone){$('shopPhone').value=sh.phone;localStorage.setItem(SKP,sh.phone);}}
     if(!Array.isArray(j)&&Array.isArray(j.services)){j.services.forEach(x=>{if(x&&typeof x.name==='string'&&x.name.trim()){const n=x.name.trim(),e=svcList.find(q=>q.name===n);if(e)e.price=num(x.price);else svcList.push({name:n,price:num(x.price)});}});saveSvc();renderChips();}
+    if(!Array.isArray(j)&&Array.isArray(j.products)){j.products.forEach(x=>{if(x&&typeof x.name==='string'&&x.name.trim()){const n=x.name.trim(),e=prodList.find(q=>q.name===n),o={name:n,price:num(x.price),stock:Math.max(0,Math.floor(Number(x.stock))||0)};if(e)Object.assign(e,o);else prodList.push(o);}});saveProd();renderChips();}
     records.forEach(r=>ensureCust(r.customerName,r.phone)); saveCust(); render(); alert(t('导入完成，现有 {0} 条记录。',records.length));
     return true;
   }catch(err){alert(t('导入失败：文件不是有效的备份 JSON。现有数据未改动。'));return false;}
@@ -840,7 +900,7 @@ $('pw1').onkeydown=$('pw2').onkeydown=e=>{if(e.key==='Enter')submitLock();};
 records=load();
 loadCustomers();
 try{customSvc=JSON.parse(localStorage.getItem('hair_salon_custom_svc_v1')||'[]').filter(x=>typeof x==='string')}catch(e){customSvc=[]}
-loadSvc();
+loadSvc();loadProd();
 month=today().slice(0,7); $('monthSel').value=month;
 $('shopName').value=localStorage.getItem(SK)||'我的理发店'; $('shopAddr').value=localStorage.getItem(SKA)||''; $('shopPhone').value=localStorage.getItem(SKP)||'';
 resetForm();
